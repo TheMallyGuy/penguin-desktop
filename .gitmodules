@@ -1,0 +1,3 @@
+[submodule "online-editor"]
+	path = online-editor
+	url = https://github.com/PenguinMod/penguinmod.github.io
