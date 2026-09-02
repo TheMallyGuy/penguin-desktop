@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:frontend": "bun run scripts/buildFrontendDev.ts",
+    "build:frontend:serve": "bun run scripts/buildFrontendDev.ts --port 8601"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

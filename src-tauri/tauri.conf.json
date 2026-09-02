@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.mally.penguinmod.desktop",
   "build": {
-    "beforeDevCommand": "bun run dev",
-    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "bun run build:frontend:serve ",
+    "devUrl": "http://localhost:3000/editor.html",
     "beforeBuildCommand": "bun run build",
     "frontendDist": "../dist"
   },
@@ -14,8 +14,8 @@
     "windows": [
       {
         "title": "penguin-desktop",
-        "width": 800,
-        "height": 600
+        "width": 1459,
+        "height": 800
       }
     ],
     "security": {
