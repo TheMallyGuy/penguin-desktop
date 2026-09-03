@@ -1,6 +1,8 @@
 // modify the editor
 
-import { waitForReduxStore } from "./helpers/getReactStore"
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ask } from "@tauri-apps/plugin-dialog";
+import { getReduxStore, waitForReduxStore } from "./helpers/getReactStore"
 
 export function removeSeeProjectPage(): void {
     const removeTarget = () => {
@@ -81,6 +83,81 @@ export function modifyCallbackUploadButton(newCallback: () => void): void {
     }
 }
 
+
+
+export function alertOverwrite() {
+    window.alert = function (message?: any): void {
+
+    };
+}
+
+export function setupNativeClosePrompt(): void {
+    try {
+        Object.defineProperty(window, "onbeforeunload", {
+            configurable: true,
+            get: () => null,
+            set: () => { },
+        });
+    } catch {
+        // ignore
+    }
+
+    const win = (window as any);
+    if (win.__nativeClosePromptInstalled) return;
+    win.__nativeClosePromptInstalled = true;
+
+    const appWindow = getCurrentWindow();
+    if (appWindow.label !== "main") return;
+
+
+    waitForReduxStore().catch(() => { });
+
+
+    async function hasUnsavedChanges(): Promise<boolean> {
+
+        let store = getReduxStore();
+        if (!store) {
+            try {
+                store = await waitForReduxStore(2500);
+            } catch {
+                return false;
+            }
+        }
+        try {
+            return Boolean(store?.getState()?.scratchGui?.projectChanged);
+        } catch {
+            return false;
+        }
+    }
+
+    let allowClose = false;
+
+    appWindow.onCloseRequested(async (event) => {
+        if (allowClose) return;
+
+        const projectChanged = await hasUnsavedChanges();
+
+        if (!projectChanged) return;
+
+        event.preventDefault();
+
+        const confirmed = await ask(
+            "You have unsaved changes in your project. Close anyway?",
+            {
+                title: "Unsaved changes",
+                kind: "warning",
+                okLabel: "Close",
+                cancelLabel: "Cancel",
+            }
+        );
+
+        if (confirmed) {
+            allowClose = true;
+            await appWindow.destroy();
+        }
+    });
+}
+
 export function modifyEditor() {
     modifyCallbackUploadButton(async () => {
         alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
@@ -91,4 +168,5 @@ export function modifyEditor() {
     });
     removeBackToHome();
     removeSeeProjectPage();
+    alertOverwrite();
 }
