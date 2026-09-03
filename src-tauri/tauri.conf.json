@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "bun run scripts/dev.ts",
     "devUrl": "http://localhost:3000/editor.html",
-    "beforeBuildCommand": "bun run bake && bun run build",
+    "beforeBuildCommand": "bun build:frontend",
     "frontendDist": "../dist"
   },
   "app": {
@@ -15,7 +15,8 @@
       {
         "title": "penguin-desktop",
         "width": 1459,
-        "height": 800
+        "height": 800,
+        "url": "editor.html"
       }
     ],
     "security": {
