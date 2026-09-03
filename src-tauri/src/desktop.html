@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        html,
+        body {
+            background: #000000;
+        }
+
+        .frame {
+            position: relative;
+            width: 1052px;
+            height: 272px;
+            background: #000000;
+            overflow: hidden;
+        }
+
+        .title {
+            position: absolute;
+            left: 66px;
+            top: 46px;
+            font-weight: 800;
+            font-size: 96px;
+            line-height: 1;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            white-space: nowrap;
+        }
+
+        .version {
+            position: absolute;
+            left: 750px;
+            top: 168px;
+            font-weight: 500;
+            font-size: 15px;
+            color: #ffffff;
+        }
+
+        .description {
+            position: absolute;
+            left: 66px;
+            top: 183px;
+            font-weight: 400;
+            font-size: 16px;
+            color: #ffffff;
+        }
+
+        .links {
+            position: absolute;
+            left: 66px;
+            top: 205px;
+            font-weight: 400;
+            font-size: 16px;
+        }
+
+        .links a {
+            color: #009DFF;
+            text-decoration: none;
+        }
+
+        .links a:hover {
+            text-decoration: underline;
+        }
+
+        .links .sep {
+            color: #ffffff;
+            padding: 0 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="frame">
+        <div class="title">PenguinDesktop!</div>
+        <div class="version">Version 1.0.0</div>
+        <div class="description">Made using Tauri! I've modified the original editor code using Javascript injection.
+        </div>
+        <div class="links"><a href="#">repo</a><span class="sep">&middot;</span><a href="#">issues</a></div>
+    </div>
+</body>
+
+</html>

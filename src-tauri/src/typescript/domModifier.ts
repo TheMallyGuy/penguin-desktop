@@ -3,6 +3,8 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { getReduxStore, waitForReduxStore } from "./helpers/getReactStore"
+import { createPrimaryButton } from "./helpers/buttonCreator";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 
 export function removeSeeProjectPage(): void {
     const removeTarget = () => {
@@ -158,6 +160,76 @@ export function setupNativeClosePrompt(): void {
     });
 }
 
+
+function addDesktopSettings() {
+    const MODAL_BODY_SELECTOR = '[class*="settings-modal_body"]';
+    const CONTAINER_CLASS = 'injd_desktop_sel';
+
+    function injectSingleButton(modalBody: HTMLDivElement): void {
+        if (modalBody.querySelector(`.${CONTAINER_CLASS}`)) return;
+
+        const container = document.createElement('div');
+        container.className = CONTAINER_CLASS;
+        container.style.width = '100%';
+
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'settings-modal_header_112iQ';
+
+        const titleSpan = document.createElement('span');
+        titleSpan.textContent = 'PenguinDesktop Settings';
+
+        const divider = document.createElement('div');
+        divider.className = 'settings-modal_divider_3K8K_';
+
+        headerDiv.append(titleSpan, divider);
+
+        const primaryButton = createPrimaryButton('about', () => {
+            const WINDOW_LABEL = 'desktop-settings';
+
+            WebviewWindow.getByLabel(WINDOW_LABEL).then(async (existingWindow) => {
+                if (existingWindow) {
+                    await existingWindow.unminimize();
+                    await existingWindow.setFocus();
+                } else {
+                    const newWebview = new WebviewWindow(WINDOW_LABEL, {
+                        url: "/desktop.html",
+                        title: 'About',
+                        width: 1052,
+                        height: 272,
+                        resizable: true,
+                    });
+
+                    newWebview.once('tauri://error', (err) => {
+                        console.error('Failed to create window:', err);
+                    });
+                }
+            }).catch(console.error);
+        });
+
+        container.append(headerDiv, primaryButton);
+
+        modalBody.prepend(container);
+    }
+
+
+    function startObserver(): void {
+        const existingModal = document.querySelector<HTMLDivElement>(MODAL_BODY_SELECTOR);
+        if (existingModal) injectSingleButton(existingModal);
+
+        const observer = new MutationObserver(() => {
+            const modalBody = document.querySelector<HTMLDivElement>(MODAL_BODY_SELECTOR);
+            if (modalBody) injectSingleButton(modalBody);
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+        });
+    }
+
+    startObserver();
+}
+
 export function modifyEditor() {
     modifyCallbackUploadButton(async () => {
         alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
@@ -166,6 +238,7 @@ export function modifyEditor() {
 
         window.open(`https://penguinmod.com/upload?name=${encodeURIComponent(state.scratchGui.projectTitle)}`);
     });
+    addDesktopSettings();
     removeBackToHome();
     removeSeeProjectPage();
     alertOverwrite();
