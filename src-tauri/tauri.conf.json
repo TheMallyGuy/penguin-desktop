@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "penguin-desktop",
+        "title": "PeguinDesktop!",
         "width": 1459,
         "height": 800,
         "url": "editor.html"
