@@ -1,11 +1,13 @@
 import { modifyEditor } from "./domModifier.ts"
-import { getAddonsConfig } from "./twaddons/addons.ts"
+import { getAddonsConfig, getEditorAddonsConfig, startAutoSavingTwAddons } from "./twaddons/addons.ts"
 import { setupAddonsOverwrite } from "./twaddons/addonsOverwrite.ts"
 
-(function () {
+(async function () {
     setupAddonsOverwrite()
     modifyEditor()
+    getEditorAddonsConfig() // these are made to save the configs before updating the app
+    startAutoSavingTwAddons()
 
-    const twcfg = getAddonsConfig()
+    const twcfg = await getAddonsConfig()
     console.log(twcfg)
 })();
