@@ -1,7 +1,11 @@
-# Tauri + Vanilla TS
+# PenguinDesktop
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
+This is an experimental unofficial offline desktop app for [Penguinmod](http://studio.penguinmod.com/editor.html).
 
-## Recommended IDE Setup
+This project works by building the penguinmod editor and pack it using Tauri. To improve user experience I've injected compiled typescript into the built penguinmod editor at runtime, Thereforce modify the editor for QoL features.
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+# Contributing
+
+Please follow [Tauri's prerequisites](https://tauri.app/start/prerequisites/) before contributing.
+
+The injection code is at `/src-tauri/src/typescript/` fyi, please declare if your PR's code is AI generated. Thanks. 
