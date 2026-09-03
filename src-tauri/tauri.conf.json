@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.mally.penguinmod.desktop",
   "build": {
-    "beforeDevCommand": "bun run build:frontend:serve ",
+    "beforeDevCommand": "bun run scripts/dev.ts",
     "devUrl": "http://localhost:3000/editor.html",
-    "beforeBuildCommand": "bun run build",
+    "beforeBuildCommand": "bun run bake && bun run build",
     "frontendDist": "../dist"
   },
   "app": {

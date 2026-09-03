@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "bake": "bun build src-tauri/src/typescript/script.ts --outdir src-tauri/src/baked_js --target=browser --format=iife",
+    "bake:watch": "bun run scripts/bakeWatch.ts",
     "tauri": "tauri",
     "build:frontend": "bun run scripts/buildFrontendDev.ts",
     "build:frontend:serve": "bun run scripts/buildFrontendDev.ts --port 8601"
@@ -17,7 +19,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
-    "vite": "^6.0.3",
-    "typescript": "~5.6.2"
+    "@types/bun": "^1.4.0",
+    "typescript": "^7.0.2",
+    "vite": "^6.0.3"
   }
 }
