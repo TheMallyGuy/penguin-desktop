@@ -11,6 +11,8 @@
     "core:webview:allow-create-webview-window",
     "core:window:allow-unminimize",
     "core:window:allow-set-focus",
-    "store:default"
+    "core:window:allow-destroy",
+    "store:default",
+    "dialog:default"
   ]
 }
