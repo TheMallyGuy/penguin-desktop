@@ -3,13 +3,13 @@ import { Glob } from "bun";
 import { $ } from "bun";
 
 const ONLINE_EDITOR = join(import.meta.dir, "../online-editor");
-const BUILD_WEB = join(import.meta.dir, "../build-web");
+const BUILD_WEB = join(import.meta.dir, "../build-dev");
 const SRC_BUILD = join(ONLINE_EDITOR, "build");
 
 console.log("Building penguinmod editor");
 await $`cd ${ONLINE_EDITOR} && npm run build`;
 
-console.log("Copying build output to build-web...");
+console.log("Copying build output to build-dev...");
 for await (const entry of new Glob("**/*").scan(SRC_BUILD)) {
   await Bun.write(join(BUILD_WEB, entry), Bun.file(join(SRC_BUILD, entry)));
 }
