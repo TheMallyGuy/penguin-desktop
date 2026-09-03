@@ -10,8 +10,8 @@
     "bake": "bun build src-tauri/src/typescript/script.ts --outdir src-tauri/src/baked_js --target=browser --format=iife",
     "bake:watch": "bun run scripts/bakeWatch.ts",
     "tauri": "tauri",
-    "build:frontend": "bun run scripts/buildFrontendDev.ts",
-    "build:frontend:serve": "bun run scripts/buildFrontendDev.ts --port 8601"
+    "build:frontend": "bun run scripts/buildFrontend.ts",
+    "build:frontend:serve": "bun run scripts/serveFrontendDev.ts --port 8601"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
