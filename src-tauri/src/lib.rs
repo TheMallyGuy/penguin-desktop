@@ -32,14 +32,18 @@ fn inject_js_files(webview: &tauri::Webview) {
         let path = entry.path();
         let content = fs::read_to_string(&path)
             .unwrap_or_else(|e| panic!("failed to read {}: {}", path.display(), e));
-        let _ = webview.eval(&content);
-        print!("injected {:#?}", entry)
+        if let Err(e) = webview.eval(&content) {
+            eprintln!("failed to eval {}: {}", path.display(), e);
+        } else {
+            println!("injected {}", path.display());
+        }
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet, open_external])
         .on_page_load(|webview, _event| {
