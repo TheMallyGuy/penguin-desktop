@@ -61,6 +61,9 @@ for await (const entry of new Glob("**/*").scan(SRC_BUILD)) {
   await Bun.write(join(BUILD_WEB, entry), Bun.file(join(SRC_BUILD, entry)));
 }
 
+console.log("Copying desktop file...");
+await Bun.write(join(BUILD_WEB, "desktop.html"), Bun.file(join(import.meta.dir, "..", "src-tauri", "src", "desktop.html")));
+
 console.log("Build complete!");
 
 console.log("Baking typescripts");

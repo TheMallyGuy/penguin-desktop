@@ -4,6 +4,7 @@ import { $ } from "bun";
 
 const TS_DIR = join(import.meta.dir, "../src-tauri/src/typescript");
 const BAKE_CMD = ["bun", "run", "bake"];
+const BUILD_WEB = join(import.meta.dir, "../dist");
 
 console.log(`Watching ${TS_DIR} for changes...`);
 
@@ -30,6 +31,9 @@ async function bake() {
 // bake once on start
 await bake();
 
+await Bun.write(join(BUILD_WEB, "desktop.html"), Bun.file(join(import.meta.dir, "..", "src-tauri", "src", "desktop.html")));
+
+
 watch(TS_DIR, { recursive: true }, (_event, filename) => {
   if (filename?.endsWith(".ts")) {
     console.log(`[watch] ${filename} changed`);
@@ -38,4 +42,4 @@ watch(TS_DIR, { recursive: true }, (_event, filename) => {
 });
 
 // keep alive
-setTimeout(() => {}, 1 << 30);
+setTimeout(() => { }, 1 << 30);
