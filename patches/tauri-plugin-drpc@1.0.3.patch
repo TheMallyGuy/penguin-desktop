@@ -1,0 +1,9 @@
+diff --git a/index.ts b/index.ts
+index ec9150322ee613166bb49842b0e0d74ad292179c..7bc473e0b638a2ee5e43b01b47b0aeedfccde2d9 100644
+--- a/index.ts
++++ b/index.ts
+@@ -58,3 +58,4 @@ export async function clearActivity() {
+ 
+   await invoke("plugin:drpc|clear_activity");
+ }
++export * from './activity';

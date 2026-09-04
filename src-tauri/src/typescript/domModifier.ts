@@ -5,6 +5,7 @@ import { ask, confirm } from "@tauri-apps/plugin-dialog";
 import { getReduxStore, waitForReduxStore } from "./helpers/getReactStore"
 import { createPrimaryButton } from "./helpers/buttonCreator";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getDiscordRpc, setDiscordRpc } from "./storeManager";
 
 export function removeSeeProjectPage(): void {
     const removeTarget = () => {
@@ -162,17 +163,21 @@ export function setupNativeClosePrompt(): void {
 }
 
 
-function addDesktopSettings() {
+function addDesktopSettings(
+    onDiscordRpcChange?: (enabled: boolean) => void
+) {
     const MODAL_BODY_SELECTOR = '[class*="settings-modal_body"]';
     const CONTAINER_CLASS = 'injd_desktop_sel';
+    const STORAGE_KEY = 'penguin_discord_rpc';
 
-    function injectSingleButton(modalBody: HTMLDivElement): void {
+    function injectDesktopSettings(modalBody: HTMLDivElement): void {
         if (modalBody.querySelector(`.${CONTAINER_CLASS}`)) return;
 
         const container = document.createElement('div');
         container.className = CONTAINER_CLASS;
         container.style.width = '100%';
 
+        // Header Section
         const headerDiv = document.createElement('div');
         headerDiv.className = 'settings-modal_header_112iQ';
 
@@ -184,42 +189,83 @@ function addDesktopSettings() {
 
         headerDiv.append(titleSpan, divider);
 
+        //Button Section
         const primaryButton = createPrimaryButton('about', () => {
             const WINDOW_LABEL = 'desktop-settings';
 
-            WebviewWindow.getByLabel(WINDOW_LABEL).then(async (existingWindow) => {
-                if (existingWindow) {
-                    await existingWindow.unminimize();
-                    await existingWindow.setFocus();
-                } else {
-                    const newWebview = new WebviewWindow(WINDOW_LABEL, {
-                        url: "/desktop.html",
-                        title: 'About',
-                        width: 1052,
-                        height: 272,
-                        resizable: true,
-                    });
+            WebviewWindow.getByLabel(WINDOW_LABEL)
+                .then(async (existingWindow) => {
+                    if (existingWindow) {
+                        await existingWindow.unminimize();
+                        await existingWindow.setFocus();
+                    } else {
+                        const newWebview = new WebviewWindow(WINDOW_LABEL, {
+                            url: '/desktop.html',
+                            title: 'About',
+                            width: 1052,
+                            height: 272,
+                            resizable: true,
+                        });
 
-                    newWebview.once('tauri://error', (err) => {
-                        console.error('Failed to create window:', err);
-                    });
-                }
-            }).catch(console.error);
+                        newWebview.once('tauri://error', (err) => {
+                            console.error('Failed to create window:', err);
+                        });
+                    }
+                })
+                .catch(console.error);
         });
 
-        container.append(headerDiv, primaryButton);
+        // Checkbox
+        const settingRow = document.createElement('div');
+        settingRow.className = 'settings-modal_setting_3KFrK';
+
+        const labelWrapper = document.createElement('div');
+        labelWrapper.className = 'settings-modal_label_21R3L';
+
+        const label = document.createElement('label');
+        label.className = 'settings-modal_label_21R3L';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'settings-modal_checkbox_3KZcV checkbox_checkbox_1UwGU';
+
+        const savedState = localStorage.getItem(STORAGE_KEY) === 'true';
+        checkbox.checked = savedState;
+
+        checkbox.addEventListener('change', (e: Event) => {
+            const target = e.target as HTMLInputElement;
+            localStorage.setItem(STORAGE_KEY, String(target.checked));
+
+            if (onDiscordRpcChange) {
+                onDiscordRpcChange(target.checked);
+            }
+
+            window.dispatchEvent(
+                new CustomEvent('penguin:rpc-toggle', {
+                    detail: { enabled: target.checked }
+                })
+            );
+        });
+
+        const labelText = document.createElement('span');
+        labelText.textContent = 'Enable Discord RPC';
+
+        label.append(checkbox, labelText);
+        labelWrapper.appendChild(label);
+        settingRow.appendChild(labelWrapper);
+
+        container.append(headerDiv, primaryButton, settingRow);
 
         modalBody.prepend(container);
     }
 
-
     function startObserver(): void {
         const existingModal = document.querySelector<HTMLDivElement>(MODAL_BODY_SELECTOR);
-        if (existingModal) injectSingleButton(existingModal);
+        if (existingModal) injectDesktopSettings(existingModal);
 
         const observer = new MutationObserver(() => {
             const modalBody = document.querySelector<HTMLDivElement>(MODAL_BODY_SELECTOR);
-            if (modalBody) injectSingleButton(modalBody);
+            if (modalBody) injectDesktopSettings(modalBody);
         });
 
         observer.observe(document.body, {
@@ -231,7 +277,8 @@ function addDesktopSettings() {
     startObserver();
 }
 
-export function modifyEditor() {
+export async function modifyEditor() {
+    localStorage.setItem("penguin_discord_rpc", String(await getDiscordRpc()))
     modifyCallbackUploadButton(async () => {
         await alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
         const store = await waitForReduxStore();
@@ -239,7 +286,9 @@ export function modifyEditor() {
 
         window.open(`https://penguinmod.com/upload?name=${encodeURIComponent(state.scratchGui.projectTitle)}`);
     });
-    addDesktopSettings();
+    addDesktopSettings(async (checkbox: boolean) => {
+        await setDiscordRpc(checkbox)
+    });
     removeBackToHome();
     removeSeeProjectPage();
     alertOverwrite();

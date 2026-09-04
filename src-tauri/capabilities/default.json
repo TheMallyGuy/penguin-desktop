@@ -13,6 +13,9 @@
     "core:window:allow-set-focus",
     "core:window:allow-destroy",
     "store:default",
+    "drpc:allow-is-running",
+    "drpc:allow-clear-activity",
+    "drpc:default",
     "dialog:default"
   ]
 }

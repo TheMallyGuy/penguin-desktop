@@ -9,6 +9,21 @@ function getStore(): Promise<Store> {
     return storePromise;
 }
 
+export async function setDiscordRpc(value: boolean) {
+    const store = await getStore();
+    await store.set("rpc", value)
+}
+
+export async function getDiscordRpc(): Promise<boolean> {
+    const store = await getStore();
+    const enabled = await store.get<boolean>("rpc")
+    if (enabled === undefined) {
+        return true
+    }
+    return enabled
+}
+
+
 export async function setTwConfigInStore(value: unknown) {
     const store = await getStore();
     await store.set("twConfigAddons", value)
