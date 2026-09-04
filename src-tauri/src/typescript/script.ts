@@ -1,6 +1,7 @@
 import { startRpc } from "./discordRpc.ts";
 import { modifyEditor, setupNativeClosePrompt } from "./domModifier.ts"
 import { registerListener } from "./eventsListener.ts";
+import { registerPmp } from "./fileHandlerOrSomethingRenameThisLaterIAmBadAtNamingThings.ts";
 import { getAddonsConfig, getEditorAddonsConfig, startAutoSavingTwAddons } from "./twaddons/addons.ts"
 import { setupAddonsOverwrite } from "./twaddons/addonsOverwrite.ts"
 
@@ -12,6 +13,8 @@ import { setupAddonsOverwrite } from "./twaddons/addonsOverwrite.ts"
     startAutoSavingTwAddons()
     registerListener()
     await startRpc()
+
+    registerPmp()
 
     const twcfg = await getAddonsConfig()
     console.log(twcfg)

@@ -34,6 +34,16 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "pmp"
+        ],
+        "mimeType": "application/zip",
+        "name": "Penguinmod Project File",
+        "description": "File contain Penguinmod code (maybe)"
+      }
     ]
   }
 }

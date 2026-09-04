@@ -1,5 +1,11 @@
 use std::fs;
 use std::path::PathBuf;
+use tauri::Emitter;
+use tauri::Manager;
+
+struct PendingFile {
+    path: String,
+}
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -9,6 +15,11 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn open_external(url: String) -> Result<(), String> {
     tauri_plugin_opener::open_url(&url, None::<&str>).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_file(file: String) -> Result<Vec<u8>, String> {
+    std::fs::read(file).map_err(|e| e.to_string())
 }
 
 fn inject_js_files(webview: &tauri::Webview) {
@@ -43,15 +54,42 @@ fn inject_js_files(webview: &tauri::Webview) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drpc::init())
-        .invoke_handler(tauri::generate_handler![greet, open_external])
+        .invoke_handler(tauri::generate_handler![greet, open_external, read_file])
         .on_page_load(|webview, _event| {
             inject_js_files(webview);
+
+            if let Some(pending) = webview.try_state::<PendingFile>() {
+                let path = pending.path.clone();
+                let webview_label = webview.label().to_string();
+                let app_handle = webview.app_handle().clone();
+                std::thread::spawn(move || {
+                    //std::thread::sleep(std::time::Duration::from_secs(1));
+                    let webview = app_handle.get_webview_window(&webview_label).unwrap();
+                    if let Err(e) = webview.emit("file-open-pmp", path) {
+                        eprintln!("failed to emit file-open-pmp: {}", e);
+                    }
+                });
+            }
         })
-        .setup(|_app| Ok(()))
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .setup(|app| {
+            let args: Vec<String> = std::env::args().collect();
+
+            if let Some(file_path) = args.get(1) {
+                println!("opened with file: {}", file_path);
+
+                app.manage(PendingFile {
+                    path: file_path.clone(),
+                });
+            }
+
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, _event| {});
 }
