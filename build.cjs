@@ -694,7 +694,15 @@ const workerLoaderPlugin = {
 
 const webpackAliases = {
     "text-encoding": toUrlPath(path.join(SRC_DIR, "lib", "tw-text-encoder.js")),
-    "scratch-render-fonts": toUrlPath(path.join(SRC_DIR, "lib", "tw-scratch-render-fonts"))
+    "scratch-render-fonts": toUrlPath(path.join(SRC_DIR, "lib", "tw-scratch-render-fonts")),
+    // Pin @turbowarp/scratch-l10n to its pure-ESM src, exactly like webpack
+    // resolved it via the package.json `browser` field. Allowing bun's
+    // default resolution to fall through to the CJS webpack bundle
+    // (dist/l10n.js) routes named exports through a fragile `.default`
+    // interop wrapper; when that wrapper is the `locales` map (not the
+    // module namespace), `isRtl` reads as undefined and runtime calls throw
+    // "isRtl is not a function". The ESM src binds named exports directly.
+    "@turbowarp/scratch-l10n": toUrlPath(path.join(ROOT_DIR, "node_modules", "@turbowarp", "scratch-l10n", "src", "index.js"))
 };
 
 // webpack `resolve.alias` entries. bun's `alias` build option is silently
