@@ -1,7 +1,7 @@
 // modify the editor
 
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { ask } from "@tauri-apps/plugin-dialog";
+import { ask, confirm } from "@tauri-apps/plugin-dialog";
 import { getReduxStore, waitForReduxStore } from "./helpers/getReactStore"
 import { createPrimaryButton } from "./helpers/buttonCreator";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -85,11 +85,12 @@ export function modifyCallbackUploadButton(newCallback: () => void): void {
     }
 }
 
-
-
-export function alertOverwrite() {
-    window.alert = function (message?: any): void {
-
+export function alertOverwrite(): void {
+    (window as any).alert = function (message?: any): Promise<boolean> {
+        return new Promise((resolve) => {
+            const userChoice = confirm(message);
+            resolve(userChoice);
+        });
     };
 }
 
@@ -232,7 +233,7 @@ function addDesktopSettings() {
 
 export function modifyEditor() {
     modifyCallbackUploadButton(async () => {
-        alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
+        await alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
         const store = await waitForReduxStore();
         const state = store.getState();
 
