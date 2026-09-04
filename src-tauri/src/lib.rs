@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use tauri::webview::PageLoadEvent;
 use tauri::Emitter;
 use tauri::Manager;
 
@@ -54,13 +55,21 @@ fn inject_js_files(webview: &tauri::Webview) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drpc::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![greet, open_external, read_file])
-        .on_page_load(|webview, _event| {
+        .on_page_load(|webview, payload| {
+            if payload.event() != PageLoadEvent::Finished {
+                return;
+            }
+
             inject_js_files(webview);
 
             if let Some(pending) = webview.try_state::<PendingFile>() {

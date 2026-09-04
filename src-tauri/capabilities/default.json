@@ -17,6 +17,8 @@
     "drpc:allow-clear-activity",
     "drpc:default",
     "dialog:default",
-    "notification:default"
+    "notification:default",
+    "os:default",
+    "process:allow-restart"
   ]
 }
