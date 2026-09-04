@@ -16,6 +16,8 @@
         "title": "PeguinDesktop!",
         "width": 1459,
         "height": 800,
+        "minHeight": 800,
+        "minWidth": 1459,
         "url": "editor.html"
       }
     ],
