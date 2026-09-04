@@ -54,7 +54,7 @@ const BUILD_WEB = join(import.meta.dir, "../build-dev");
 const SRC_BUILD = join(ONLINE_EDITOR, "build");
 
 console.log("Building penguinmod editor");
-await run(["npm", "run", "build"], ONLINE_EDITOR);
+await run(["bun", "run", "build"], ONLINE_EDITOR);
 
 console.log("Copying build output to build-dev...");
 for await (const entry of new Glob("**/*").scan(SRC_BUILD)) {

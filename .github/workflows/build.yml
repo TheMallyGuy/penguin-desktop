@@ -26,6 +26,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Linux system dependencies
         if: matrix.platform == 'ubuntu-22.04'
@@ -46,11 +49,12 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
-      - name: Install frontend dependencies
+      - name: Install root dependencies
         run: bun install
 
-      - name: Bake TypeScript
-        run: bun run bake
+      - name: Install editor (submodule) dependencies
+        working-directory: online-editor
+        run: bun install
 
       - name: Build & release
         uses: tauri-apps/tauri-action@v1
