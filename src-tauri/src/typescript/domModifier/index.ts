@@ -2,12 +2,15 @@
 
 import { waitForReduxStore } from "../helpers/getReactStore";
 import { getDiscordRpc, setDiscordRpc } from "../storeManager";
-import { modifyCallbackUploadButton, removeBackToHome, removeSeeProjectPage } from "./editor/menuBarModifier";
+import { menuBarEditItemModifier, modifyCallbackUploadButton, removeBackToHome, removeSeeProjectPage } from "./editor/menuBarModifier";
 import { alertOverwrite } from "./editor/overwriteMethods";
 import { addDesktopSettings } from "./editor/settings"
 
 export async function modifyEditor() {
     localStorage.setItem("penguin_discord_rpc", String(await getDiscordRpc()))
+    menuBarEditItemModifier((e: MouseEvent) => {
+        alert("hello")
+    });
     modifyCallbackUploadButton(async () => {
         await alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
         const store = await waitForReduxStore();
