@@ -49,6 +49,7 @@ async function run(cmd: string[], cwd?: string): Promise<void> {
   process.stdout.write("\n");
 }
 
+const ROOT = join(import.meta.dir, "..");
 const ONLINE_EDITOR = join(import.meta.dir, "../online-editor");
 const BUILD_WEB = join(import.meta.dir, "../dist");
 const SRC_BUILD = join(ONLINE_EDITOR, "build");
@@ -66,6 +67,6 @@ await Bun.write(join(BUILD_WEB, "desktop.html"), Bun.file(join(import.meta.dir, 
 console.log("Build complete!");
 
 console.log("Baking typescripts");
-await run(["bun", "run", "bake"], import.meta.dir);
+await run(["bun", "run", "bake"], ROOT);
 
 console.log("Baked!");
