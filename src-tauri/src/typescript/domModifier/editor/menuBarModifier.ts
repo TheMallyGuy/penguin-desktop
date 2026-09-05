@@ -77,3 +77,32 @@ export function modifyCallbackUploadButton(newCallback: () => void): void {
         observer.observe(menuBar, { childList: true, subtree: true });
     }
 }
+
+export function modifyCallbackPackageButton(newCallback: () => void): void {
+    if ((window as any).__packageHandlerAttached) return;
+    (window as any).__packageHandlerAttached = true;
+
+    const isPackageItem = (el: HTMLElement | null): HTMLElement | null => {
+        const li = el?.closest('li.menu_menu-item_3ELPx') as HTMLElement | null;
+        const span = li?.querySelector('span');
+        return span?.textContent?.trim() === 'Package project' ? li : null;
+    };
+
+    document.addEventListener('mousedown', (event) => {
+        if (isPackageItem(event.target as HTMLElement)) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+    }, true);
+
+    document.addEventListener('click', async (event) => {
+        const li = isPackageItem(event.target as HTMLElement);
+        if (li) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            await newCallback();
+        }
+    }, true);
+}

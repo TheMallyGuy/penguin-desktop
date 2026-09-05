@@ -44,23 +44,36 @@ async function run(cmd: string[], cwd?: string): Promise<void> {
     processStream(proc.stderr),
   ]);
 
-  await proc.exited;
+  const exitCode = await proc.exited;
   redraw();
   process.stdout.write("\n");
+
+  if (exitCode !== 0) {
+    throw new Error(`Command failed with exit code ${exitCode}: ${cmd.join(" ")}`);
+  }
 }
 
 const ROOT = join(import.meta.dir, "..");
 const ONLINE_EDITOR = join(import.meta.dir, "../online-editor");
-const BUILD_WEB = join(import.meta.dir, "../dist");
+const PACKAGER = join(import.meta.dir, "../packager");
+const PACKAGER_SRC_BUILD = join(PACKAGER, "dist");
+const BUILD_WEB = join(import.meta.dir, "../build-dev");
+const BUILD_PACKAGER = join(import.meta.dir, "../build-dev", "packager");
 const SRC_BUILD = join(ONLINE_EDITOR, "build");
 
 console.log("Building penguinmod editor");
 await run(["bun", "run", "build"], ONLINE_EDITOR);
+console.log("Building packager")
+await run(["bun", "run", "build"], PACKAGER);
 
-console.log("Copying build output to dist...");
+console.log("Copying build output to build-dev...");
 for await (const entry of new Glob("**/*").scan(SRC_BUILD)) {
   await Bun.write(join(BUILD_WEB, entry), Bun.file(join(SRC_BUILD, entry)));
 }
+for await (const entry of new Glob("**/*").scan(PACKAGER_SRC_BUILD)) {
+  await Bun.write(join(BUILD_PACKAGER, entry), Bun.file(join(PACKAGER_SRC_BUILD, entry)));
+}
+
 console.log("Copying desktop file...")
 await Bun.write(join(BUILD_WEB, "desktop.html"), Bun.file(join(import.meta.dir, "..", "src-tauri", "src", "desktop.html")));
 

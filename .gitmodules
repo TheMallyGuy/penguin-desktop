@@ -1,3 +1,6 @@
 [submodule "online-editor"]
 	path = online-editor
 	url = https://github.com/TheMallyGuy/penguinsomethingmod.git
+[submodule "packager"]
+	path = packager
+	url = https://github.com/TheMallyGuy/pm-packager.git

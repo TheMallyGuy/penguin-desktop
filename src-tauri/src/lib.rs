@@ -23,6 +23,11 @@ fn read_file(file: String) -> Result<Vec<u8>, String> {
     std::fs::read(file).map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn write_file(file: String, contents: Vec<u8>) -> Result<(), String> {
+    std::fs::write(file, contents).map_err(|e| e.to_string())
+}
+
 fn inject_js_files(webview: &tauri::Webview) {
     let content: std::borrow::Cow<'static, str> = if cfg!(debug_assertions) {
         let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -57,8 +62,16 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drpc::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![greet, open_external, read_file])
+        .invoke_handler(tauri::generate_handler![greet, open_external, read_file, write_file])
         .on_page_load(|webview, payload| {
+            if payload.event() == PageLoadEvent::Started {
+                // inject early
+                if webview.label() == "packager-win" {
+                    inject_js_files(webview);
+                }
+                return;
+            }
+
             if payload.event() != PageLoadEvent::Finished {
                 return;
             }
