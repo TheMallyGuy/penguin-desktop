@@ -78,47 +78,31 @@ export function modifyCallbackUploadButton(newCallback: () => void): void {
     }
 }
 
-type MenuCallback = (e: MouseEvent) => void;
+export function modifyCallbackPackageButton(newCallback: () => void): void {
+    if ((window as any).__packageHandlerAttached) return;
+    (window as any).__packageHandlerAttached = true;
 
-export function menuBarEditItemModifier(onItemClick: MenuCallback): MutationObserver {
-    function createMenuItem(text: string, onClick: MenuCallback): HTMLLIElement {
-        const newLi = document.createElement('li');
-        newLi.className = 'menu_menu-item_3ELPx menu_hoverable_3mGWm custom-addon-item';
+    const isPackageItem = (el: HTMLElement | null): HTMLElement | null => {
+        const li = el?.closest('li.menu_menu-item_3ELPx') as HTMLElement | null;
+        const span = li?.querySelector('span');
+        return span?.textContent?.trim() === 'Package project' ? li : null;
+    };
 
-        const newSpan = document.createElement('span');
-        newSpan.textContent = text;
-        newLi.appendChild(newSpan);
+    document.addEventListener('mousedown', (event) => {
+        if (isPackageItem(event.target as HTMLElement)) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        }
+    }, true);
 
-        newLi.addEventListener('click', (e: MouseEvent) => {
-            e.stopPropagation();
-            onClick(e);
-        });
-
-        return newLi;
-    }
-
-    const observer = new MutationObserver(() => {
-        const menuItems = document.querySelectorAll<HTMLDivElement>('.menu-bar_menu-bar-item_264qQ');
-
-        menuItems.forEach((menuItem) => {
-            const labelSpan = menuItem.querySelector('span');
-            const isTargetMenu = labelSpan && labelSpan.textContent?.trim() === 'File';
-
-            if (isTargetMenu) {
-                const menuList = menuItem.querySelector<HTMLUListElement>('ul.menu_menu_1rWB9');
-
-                if (menuList && !menuList.querySelector('.custom-addon-item')) {
-                    const newItem = createMenuItem('Open Penguinmod packager', onItemClick);
-                    menuList.appendChild(newItem);
-                }
-            }
-        });
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
-
-    return observer;
+    document.addEventListener('click', async (event) => {
+        const li = isPackageItem(event.target as HTMLElement);
+        if (li) {
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+            await newCallback();
+        }
+    }, true);
 }
