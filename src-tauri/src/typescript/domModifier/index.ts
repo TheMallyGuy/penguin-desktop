@@ -15,23 +15,26 @@ export async function modifyEditor() {
 
         modifyCallbackPackageButton(async () => {
             const WINDOW_LABEL = 'packager-win';
+            const handoffProject = async () => {
+                const state = getReduxStore().getState();
+                const blob: Blob = await state.scratchGui.vm.saveProjectSb3();
+                const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+
+                await emitTo(WINDOW_LABEL, "file://handoff", bytes);
+            };
 
             WebviewWindow.getByLabel(WINDOW_LABEL)
                 .then(async (existingWindow) => {
                     if (existingWindow) {
                         await existingWindow.unminimize();
                         await existingWindow.setFocus();
+                        await handoffProject();
                         return;
                     }
 
                     const unlistenReady = await listen(`${WINDOW_LABEL}://ready`, async () => { // handle the ready
                         unlistenReady();
-
-                        const state = getReduxStore().getState();
-                        const blob: Blob = await state.scratchGui.vm.saveProjectSb3();
-                        const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
-
-                        await emitTo(WINDOW_LABEL, "file://handoff", bytes);
+                        await handoffProject();
                     });
 
                     const packagerWindow = new WebviewWindow(WINDOW_LABEL, {
@@ -74,6 +77,12 @@ export async function modifyEditor() {
 
             resolveImport({ data: bytes.buffer, name: 'project.sb3' });
         })
+
+        if (typeof (window as any).__pmImportResolve !== 'function') {
+            await new Promise<void>((resolve) => {
+                window.addEventListener("packager-importer-ready", () => resolve(), { once: true });
+            });
+        }
 
         await emit("packager-win://ready") // we emit that we're ready
     }

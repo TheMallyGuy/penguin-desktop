@@ -9,6 +9,7 @@ import { setupAddonsOverwrite } from "./twaddons/addonsOverwrite.ts"
 (window as any).GlobalPackagerImporter = () => new Promise((resolve, reject) => {
     (window as any).__pmImportResolve = resolve;
     (window as any).__pmImportReject = reject;
+    window.dispatchEvent(new Event("packager-importer-ready"));
 });
 
 (async function () {

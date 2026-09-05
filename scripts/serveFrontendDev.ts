@@ -44,9 +44,13 @@ async function run(cmd: string[], cwd?: string): Promise<void> {
     processStream(proc.stderr),
   ]);
 
-  await proc.exited;
+  const exitCode = await proc.exited;
   redraw();
   process.stdout.write("\n");
+
+  if (exitCode !== 0) {
+    throw new Error(`Command failed with exit code ${exitCode}: ${cmd.join(" ")}`);
+  }
 }
 
 const ROOT = join(import.meta.dir, "..");
@@ -94,4 +98,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`Now serving at http://localhost:${server.port}`);   
+console.log(`Now serving at http://localhost:${server.port}`);
