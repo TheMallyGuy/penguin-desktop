@@ -24,31 +24,24 @@ fn read_file(file: String) -> Result<Vec<u8>, String> {
 }
 
 fn inject_js_files(webview: &tauri::Webview) {
-    let mut backed_js_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    backed_js_dir.push("src");
-    backed_js_dir.push("baked_js");
-
-    if !backed_js_dir.exists() {
-        return;
-    }
-
-    let mut entries: Vec<_> = fs::read_dir(&backed_js_dir)
-        .expect("failed to read baked_js directory")
-        .filter_map(|e| e.ok())
-        .filter(|e| e.path().extension().map_or(false, |ext| ext == "js"))
-        .collect();
-
-    entries.sort_by_key(|e| e.path());
-
-    for entry in entries {
-        let path = entry.path();
-        let content = fs::read_to_string(&path)
-            .unwrap_or_else(|e| panic!("failed to read {}: {}", path.display(), e));
-        if let Err(e) = webview.eval(&content) {
-            eprintln!("failed to eval {}: {}", path.display(), e);
+    let content: std::borrow::Cow<'static, str> = if cfg!(debug_assertions) {
+        let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("src")
+            .join("baked_js")
+            .join("script.js");
+        if let Ok(file_content) = fs::read_to_string(&dev_path) {
+            std::borrow::Cow::Owned(file_content)
         } else {
-            println!("injected {}", path.display());
+            std::borrow::Cow::Borrowed(include_str!("baked_js/script.js"))
         }
+    } else {
+        std::borrow::Cow::Borrowed(include_str!("baked_js/script.js"))
+    };
+
+    if let Err(e) = webview.eval(&*content) {
+        eprintln!("failed to eval baked script: {}", e);
+    } else {
+        println!("injected baked script");
     }
 }
 

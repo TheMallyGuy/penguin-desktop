@@ -22,3 +22,5 @@ export async function modifyEditor() {
     removeSeeProjectPage();
     alertOverwrite();
 }
+
+export { setupNativeClosePrompt } from "./editor/nativeClose";

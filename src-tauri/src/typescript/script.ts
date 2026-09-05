@@ -1,5 +1,5 @@
 import { startRpc } from "./discordRpc.ts";
-import { modifyEditor, setupNativeClosePrompt } from "./domModifier.ts"
+import { modifyEditor, setupNativeClosePrompt } from "./domModifier/index.ts";
 import { registerListener } from "./eventsListener.ts";
 import { registerPmp } from "./fileHandlerOrSomethingRenameThisLaterIAmBadAtNamingThings.ts";
 import { checkForUpdates } from "./helpers/updaterHelper.ts";
