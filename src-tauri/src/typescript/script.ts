@@ -6,6 +6,11 @@ import { checkForUpdates } from "./helpers/updaterHelper.ts";
 import { getAddonsConfig, getEditorAddonsConfig, startAutoSavingTwAddons } from "./twaddons/addons.ts"
 import { setupAddonsOverwrite } from "./twaddons/addonsOverwrite.ts"
 
+(window as any).GlobalPackagerImporter = () => new Promise((resolve, reject) => {
+    (window as any).__pmImportResolve = resolve;
+    (window as any).__pmImportReject = reject;
+});
+
 (async function () {
     const injected = window as unknown as { __windowInjected?: boolean };
     if (injected.__windowInjected) return;

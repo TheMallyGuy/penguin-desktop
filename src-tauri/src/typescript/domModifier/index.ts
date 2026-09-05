@@ -6,7 +6,8 @@ import { getDiscordRpc, setDiscordRpc } from "../storeManager";
 import { modifyCallbackPackageButton, modifyCallbackUploadButton, removeBackToHome, removeSeeProjectPage } from "./editor/menuBarModifier";
 import { alertOverwrite } from "./editor/overwriteMethods";
 import { addDesktopSettings } from "./editor/settings"
-import { emitTo } from "@tauri-apps/api/event";
+import { interceptPackagerDownloads } from "./editor/packagerDownloads";
+import { emit, emitTo, listen } from "@tauri-apps/api/event";
 
 export async function modifyEditor() {
     if (!window.location.href.toString().includes("packager")) {
@@ -14,30 +15,35 @@ export async function modifyEditor() {
 
         modifyCallbackPackageButton(async () => {
             const WINDOW_LABEL = 'packager-win';
-            const state = getReduxStore().getState()
 
             WebviewWindow.getByLabel(WINDOW_LABEL)
                 .then(async (existingWindow) => {
                     if (existingWindow) {
                         await existingWindow.unminimize();
                         await existingWindow.setFocus();
-                    } else {
-                        const packagerWindow = new WebviewWindow(WINDOW_LABEL, {
-                            url: 'packager/index.html',
-                            title: 'Packager',
-                            width: 800,
-                            height: 600,
-                        });
-
-                        packagerWindow.once('tauri://error', (e) => {
-                            console.error('packager window failed to create', e);
-                        });
-
-                        packagerWindow.once("tauri://webview-created", async () => {
-                            delay(500)
-                            emitTo("packager-win", "file://handoff", await state.vm.saveProjectSb3())
-                        })
+                        return;
                     }
+
+                    const unlistenReady = await listen(`${WINDOW_LABEL}://ready`, async () => { // handle the ready
+                        unlistenReady();
+
+                        const state = getReduxStore().getState();
+                        const blob: Blob = await state.scratchGui.vm.saveProjectSb3();
+                        const bytes = Array.from(new Uint8Array(await blob.arrayBuffer()));
+
+                        await emitTo(WINDOW_LABEL, "file://handoff", bytes);
+                    });
+
+                    const packagerWindow = new WebviewWindow(WINDOW_LABEL, {
+                        url: 'packager/index.html',
+                        title: 'Packager',
+                        width: 800,
+                        height: 600,
+                    });
+
+                    packagerWindow.once('tauri://error', (e) => {
+                        console.error('packager window failed to create', e);
+                    });
                 })
                 .catch(console.error);
         });
@@ -54,10 +60,26 @@ export async function modifyEditor() {
         });
         removeBackToHome();
         removeSeeProjectPage();
-        alertOverwrite();
     } else {
-        // TODO handle the json thing from vm
+        interceptPackagerDownloads();
+
+        await listen<number[]>("file://handoff", (p) => {
+            const bytes = new Uint8Array(p.payload);
+
+            const resolveImport = (window as any).__pmImportResolve;
+            if (typeof resolveImport !== 'function') {
+                console.warn('packager import hook not ready yet, dropping handoff payload');
+                return;
+            }
+
+            resolveImport({ data: bytes.buffer, name: 'project.sb3' });
+        })
+
+        await emit("packager-win://ready") // we emit that we're ready
     }
+
+    // default methods must inject
+    alertOverwrite();
 }
 
 export { setupNativeClosePrompt } from "./editor/nativeClose";
