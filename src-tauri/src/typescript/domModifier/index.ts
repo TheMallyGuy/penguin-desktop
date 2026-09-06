@@ -1,13 +1,15 @@
 // modify the editor
 
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { getReduxStore, waitForReduxStore } from "../helpers/getReactStore";
+import { getReduxStore } from "../helpers/getReactStore";
 import { getDiscordRpc, setDiscordRpc } from "../storeManager";
 import { modifyCallbackPackageButton, modifyCallbackUploadButton, removeBackToHome, removeSeeProjectPage } from "./editor/menuBarModifier";
 import { alertOverwrite } from "./editor/overwriteMethods";
 import { addDesktopSettings } from "./editor/settings"
 import { interceptPackagerDownloads } from "./editor/packagerDownloads";
 import { emit, emitTo, listen } from "@tauri-apps/api/event";
+import { invoke } from "@tauri-apps/api/core";
+import { blobToDataURL } from "../helpers/blob";
 
 export async function modifyEditor() {
     if (!window.location.href.toString().includes("packager")) {
@@ -52,11 +54,29 @@ export async function modifyEditor() {
         });
 
         modifyCallbackUploadButton(async () => {
-            await alert("Unfortunately, we cannot auto upload to the penguinmod upload site. Therefore, please save your project and upload manually to the site.")
-            const store = await waitForReduxStore();
-            const state = store.getState();
+            try {
+                const state = getReduxStore().getState();
+                const vm = state.scratchGui.vm;
+                const projectDataUrl = await blobToDataURL(await vm.saveProjectSb3());
 
-            window.open(`https://penguinmod.com/upload?name=${encodeURIComponent(state.scratchGui.projectTitle)}`);
+                const thumbnailDataUrl = await new Promise<string>((resolve) => {
+                    vm.postIOData('video', { forceTransparentPreview: true });
+                    vm.renderer.requestSnapshot((dataURI: string) => {
+                        vm.postIOData('video', { forceTransparentPreview: false });
+                        resolve(dataURI);
+                    });
+                    vm.renderer.draw();
+                });
+
+                await invoke("open_pm_upload", {
+                    title: state.scratchGui.projectTitle ?? "",
+                    projectDataUrl,
+                    thumbnailDataUrl,
+                });
+            } catch (err) {
+                console.error("failed to open upload page:", err);
+                await alert("Couldn't open the PenguinMod upload page. Please save your project and upload manually to the site.");
+            }
         });
         addDesktopSettings(async (checkbox: boolean) => {
             await setDiscordRpc(checkbox)

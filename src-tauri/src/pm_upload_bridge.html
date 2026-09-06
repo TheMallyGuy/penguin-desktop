@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+</head>
+
+<body>
+    <p id="status">Opening the PenguinMod upload page...</p>
+    <!-- users will not able to see this but just displaying this if something unexpected happens-->
+    <script>
+        // (tauri-apps/tauri#15872).
+        (async () => {
+            const statusEl = document.getElementById("status");
+
+            let title, dataUrl, thumbnailDataUrl;
+            try {
+                const res = await fetch("/project");
+                if (!res.ok) throw new Error("no project queued");
+                ({ title, dataUrl, thumbnailDataUrl } = await res.json());
+            } catch (e) {
+                statusEl.textContent = "No project is queued for upload. Go back to the desktop app and click Upload again.";
+                return;
+            }
+
+            const popup = window.open(
+                "https://penguinmod.com/upload?name=" + encodeURIComponent(title) +
+                "&external=" + encodeURIComponent(window.location.origin)
+            );
+
+            if (!popup) {
+                statusEl.textContent = "Your browser blocked the popup. Please allow popups for this page and try again.";
+                return;
+            }
+
+            window.addEventListener("message", function handler(e) {
+                if (e.source !== popup || !e.data || !e.data.p4 || e.data.p4.type !== "validate") return;
+                window.removeEventListener("message", handler);
+
+                if (thumbnailDataUrl) {
+                    popup.postMessage({ p4: { type: "image", uri: thumbnailDataUrl } }, "*");
+                }
+                popup.postMessage({ p4: { type: "project", uri: dataUrl } }, "*");
+                popup.postMessage({ p4: { type: "finished" } }, "*");
+                window.close();
+            });
+
+            statusEl.textContent = "Sent! You can close this tab.";
+        })();
+    </script>
+</body>
+
+</html>

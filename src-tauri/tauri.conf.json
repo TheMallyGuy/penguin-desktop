@@ -7,12 +7,13 @@
     "beforeDevCommand": "bun run scripts/dev.ts",
     "devUrl": "http://localhost:3000/editor.html",
     "beforeBuildCommand": "bun build:frontend",
-    "frontendDist": "../dist"
+    "frontendDist": "../build-dev"
   },
   "app": {
     "withGlobalTauri": true,
     "windows": [
       {
+        "label": "main",
         "title": "PeguinDesktop!",
         "width": 1459,
         "height": 800,

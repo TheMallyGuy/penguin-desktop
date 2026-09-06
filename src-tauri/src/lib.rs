@@ -1,11 +1,72 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::Mutex;
 use tauri::webview::PageLoadEvent;
 use tauri::Emitter;
 use tauri::Manager;
 
 struct PendingFile {
     path: String,
+}
+
+const PM_UPLOAD_BRIDGE_PORT: u16 = 17421;
+
+#[derive(Clone)]
+struct PmUploadPayload {
+    title: String,
+    project_data_url: String,
+    thumbnail_data_url: Option<String>,
+}
+
+#[derive(Default)]
+struct PmUploadState(Mutex<Option<PmUploadPayload>>);
+
+fn start_pm_upload_bridge_server(app: tauri::AppHandle) {
+    std::thread::spawn(move || {
+        let server = match tiny_http::Server::http(("127.0.0.1", PM_UPLOAD_BRIDGE_PORT)) {
+            Ok(server) => server,
+            Err(e) => {
+                eprintln!("failed to start pm-upload bridge server: {}", e);
+                return;
+            }
+        };
+
+        for request in server.incoming_requests() {
+            let (status, content_type, body): (u16, &str, String) = match request.url() {
+                "/" | "/bridge.html" => (
+                    200,
+                    "text/html; charset=utf-8",
+                    include_str!("pm_upload_bridge.html").to_string(),
+                ),
+                "/project" => {
+                    let state = app.state::<PmUploadState>();
+                    let payload = state.0.lock().unwrap().clone();
+                    match payload {
+                        Some(p) => (
+                            200,
+                            "application/json",
+                            serde_json::json!({
+                                "title": p.title,
+                                "dataUrl": p.project_data_url,
+                                "thumbnailDataUrl": p.thumbnail_data_url,
+                            })
+                            .to_string(),
+                        ),
+                        None => (404, "text/plain", "no project queued".to_string()),
+                    }
+                }
+                _ => (404, "text/plain", "not found".to_string()),
+            };
+
+            let header =
+                tiny_http::Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes())
+                    .unwrap();
+            let response = tiny_http::Response::from_string(body)
+                .with_status_code(status)
+                .with_header(header);
+            let _ = request.respond(response);
+        }
+    });
 }
 
 #[tauri::command]
@@ -28,20 +89,48 @@ fn write_file(file: String, contents: Vec<u8>) -> Result<(), String> {
     std::fs::write(file, contents).map_err(|e| e.to_string())
 }
 
-fn inject_js_files(webview: &tauri::Webview) {
-    let content: std::borrow::Cow<'static, str> = if cfg!(debug_assertions) {
+#[tauri::command]
+fn open_pm_upload(
+    state: tauri::State<PmUploadState>,
+    title: String,
+    project_data_url: String,
+    thumbnail_data_url: Option<String>,
+) -> Result<(), String> {
+    *state.0.lock().unwrap() = Some(PmUploadPayload {
+        title,
+        project_data_url,
+        thumbnail_data_url,
+    });
+
+    tauri_plugin_opener::open_url(
+        format!("http://localhost:{PM_UPLOAD_BRIDGE_PORT}/"),
+        None::<&str>,
+    )
+    .map_err(|e| e.to_string())
+}
+
+const OWNED_WINDOW_LABELS: [&str; 4] = [
+    "main",
+    "packager-win",
+    "addons-settings",
+    "desktop-settings",
+];
+
+fn read_baked_js(filename: &str, prod_fallback: &'static str) -> std::borrow::Cow<'static, str> {
+    if cfg!(debug_assertions) {
         let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("src")
             .join("baked_js")
-            .join("script.js");
-        if let Ok(file_content) = fs::read_to_string(&dev_path) {
-            std::borrow::Cow::Owned(file_content)
-        } else {
-            std::borrow::Cow::Borrowed(include_str!("baked_js/script.js"))
+            .join(filename);
+        if let Ok(content) = fs::read_to_string(&dev_path) {
+            return std::borrow::Cow::Owned(content);
         }
-    } else {
-        std::borrow::Cow::Borrowed(include_str!("baked_js/script.js"))
-    };
+    }
+    std::borrow::Cow::Borrowed(prod_fallback)
+}
+
+fn inject_js_files(webview: &tauri::Webview) {
+    let content = read_baked_js("script.js", include_str!("baked_js/script.js"));
 
     if let Err(e) = webview.eval(&*content) {
         eprintln!("failed to eval baked script: {}", e);
@@ -62,8 +151,19 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_drpc::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![greet, open_external, read_file, write_file])
+        .manage(PmUploadState::default())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            open_external,
+            read_file,
+            write_file,
+            open_pm_upload
+        ])
         .on_page_load(|webview, payload| {
+            if !OWNED_WINDOW_LABELS.contains(&webview.label()) {
+                return;
+            }
+
             if payload.event() == PageLoadEvent::Started {
                 // inject early
                 if webview.label() == "packager-win" {
@@ -92,6 +192,8 @@ pub fn run() {
             }
         })
         .setup(|app| {
+            start_pm_upload_bridge_server(app.handle().clone());
+
             let args: Vec<String> = std::env::args().collect();
 
             if let Some(file_path) = args.get(1) {
