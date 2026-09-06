@@ -7,11 +7,11 @@ This project works by building the penguinmod editor and pack it using Tauri. To
 <img src="./demo.png" width=1000>
 
 # QoL/Features
-- Able to upload to penguinmod using external by serve a tiny localhost server 
+- Upload projects to PenguinMod through a tiny localhost server.
 - Built in Discord RPC
-- Perverse addons on each updates/reinstall 
-- Handle .pmp files when click on it
-- Native close/alert thing idk
+- Preserve addons across updates and reinstalls.
+- Open `.pmp` files with the desktop application.
+- Use native close and alert dialogs.
 
 # Contributing
 
