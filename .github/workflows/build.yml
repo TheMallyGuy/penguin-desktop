@@ -56,6 +56,10 @@ jobs:
         working-directory: online-editor
         run: bun install
 
+      - name: Install packager (submodule) dependencies
+        working-directory: packager
+        run: bun install
+
       - name: Build & release
         uses: tauri-apps/tauri-action@v1
         env:
