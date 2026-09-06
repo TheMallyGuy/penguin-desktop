@@ -12,18 +12,9 @@ export function removeSeeProjectPage(): void {
 
     removeTarget();
 
-    const menuBar = document.querySelector('.menu-bar_menu-bar_1gLUp');
 
-    if (menuBar) {
-        const observer = new MutationObserver(() => {
-            removeTarget();
-        });
-
-        observer.observe(menuBar, {
-            childList: true,
-            subtree: true,
-        });
-    }
+    new MutationObserver(() => removeTarget())
+        .observe(document.body, { childList: true, subtree: true });
 }
 
 export function removeBackToHome(): void {
@@ -38,44 +29,24 @@ export function removeBackToHome(): void {
 
     removeTarget();
 
-    const menuBar = document.querySelector('.menu-bar_menu-bar_1gLUp');
-
-    if (menuBar) {
-        const observer = new MutationObserver(() => {
-            removeTarget();
-        });
-
-        observer.observe(menuBar, {
-            childList: true,
-            subtree: true,
-        });
-    }
+    new MutationObserver(() => removeTarget())
+        .observe(document.body, { childList: true, subtree: true });
 }
 
 export function modifyCallbackUploadButton(newCallback: () => void): void {
-    const attachCustomHandler = () => {
-        const homeLink = document.querySelector<HTMLAnchorElement>('.share-button_share-button_36Wbh');
+    if ((window as any).__uploadHandlerAttached) return;
+    (window as any).__uploadHandlerAttached = true;
 
-        if (homeLink && !homeLink.dataset.customHandlerAttached) {
-            homeLink.dataset.customHandlerAttached = 'true';
 
-            homeLink.addEventListener('click', (event: MouseEvent) => {
-                event.preventDefault();
+    document.addEventListener('click', (event: MouseEvent) => {
+        const target = event.target as HTMLElement | null;
+        if (!target?.closest('.share-button_share-button_36Wbh')) return;
 
-                event.stopImmediatePropagation();
+        event.preventDefault();
+        event.stopImmediatePropagation();
 
-                newCallback();
-            }, true);
-        }
-    };
-
-    attachCustomHandler();
-
-    const menuBar = document.querySelector('.menu-bar_menu-bar_1gLUp');
-    if (menuBar) {
-        const observer = new MutationObserver(() => attachCustomHandler());
-        observer.observe(menuBar, { childList: true, subtree: true });
-    }
+        newCallback();
+    }, true);
 }
 
 export function modifyCallbackPackageButton(newCallback: () => void): void {
