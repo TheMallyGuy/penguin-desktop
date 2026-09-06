@@ -1,4 +1,4 @@
-import { listen } from '@tauri-apps/api/event';
+import { emit, listen } from '@tauri-apps/api/event';
 import { waitForReduxStore } from './helpers/getReactStore';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -35,4 +35,6 @@ export function registerPmp() {
         });
         store.dispatch({ type: CLOSE_MODAL, modal: 'loadingProject' });
     });
+
+    emit("editor://ready")
 }

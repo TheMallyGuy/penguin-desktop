@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::webview::PageLoadEvent;
-use tauri::Emitter;
 use tauri::Manager;
+use tauri::{Emitter, Listener};
 
 struct PendingFile {
     path: String,
@@ -201,12 +201,24 @@ pub fn run() {
                 let path = pending.path.clone();
                 let webview_label = webview.label().to_string();
                 let app_handle = webview.app_handle().clone();
-                std::thread::spawn(move || {
-                    //std::thread::sleep(std::time::Duration::from_secs(1));
-                    let webview = app_handle.get_webview_window(&webview_label).unwrap();
-                    if let Err(e) = webview.emit("file-open-pmp", path) {
-                        eprintln!("failed to emit file-open-pmp: {}", e);
-                    }
+
+                let app_handle_for_closure = app_handle.clone();
+
+                app_handle.once("editor://ready", move |_event| {
+                    let app_handle = app_handle_for_closure;
+
+                    std::thread::spawn(move || {
+                        let webview = match app_handle.get_webview_window(&webview_label) {
+                            Some(w) => w,
+                            None => {
+                                eprintln!("webview window '{}' not found", webview_label);
+                                return;
+                            }
+                        };
+                        if let Err(e) = webview.emit("file-open-pmp", path) {
+                            eprintln!("failed to emit file-open-pmp: {}", e);
+                        }
+                    });
                 });
             }
         })
