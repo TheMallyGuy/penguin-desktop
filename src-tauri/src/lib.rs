@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::webview::PageLoadEvent;
 use tauri::Emitter;
@@ -21,16 +22,24 @@ struct PmUploadPayload {
 #[derive(Default)]
 struct PmUploadState(Mutex<Option<PmUploadPayload>>);
 
-fn start_pm_upload_bridge_server(app: tauri::AppHandle) {
-    std::thread::spawn(move || {
-        let server = match tiny_http::Server::http(("127.0.0.1", PM_UPLOAD_BRIDGE_PORT)) {
-            Ok(server) => server,
-            Err(e) => {
-                eprintln!("failed to start pm-upload bridge server: {}", e);
-                return;
-            }
-        };
+#[derive(Default)]
+struct PmUploadBridgeReady(AtomicBool);
 
+fn start_pm_upload_bridge_server(app: tauri::AppHandle) {
+    // bind to some port
+    let server = match tiny_http::Server::http(("127.0.0.1", PM_UPLOAD_BRIDGE_PORT)) {
+        Ok(server) => server,
+        Err(e) => {
+            eprintln!("failed to start pm-upload bridge server: {}", e);
+            return;
+        }
+    };
+
+    app.state::<PmUploadBridgeReady>()
+        .0
+        .store(true, Ordering::SeqCst);
+
+    std::thread::spawn(move || {
         for request in server.incoming_requests() {
             let (status, content_type, body): (u16, &str, String) = match request.url() {
                 "/" | "/bridge.html" => (
@@ -39,8 +48,9 @@ fn start_pm_upload_bridge_server(app: tauri::AppHandle) {
                     include_str!("pm_upload_bridge.html").to_string(),
                 ),
                 "/project" => {
+                    // consume on read so a reloaded/duplicated tab doesn't keep re-serving a stale project indefinitely.
                     let state = app.state::<PmUploadState>();
-                    let payload = state.0.lock().unwrap().clone();
+                    let payload = state.0.lock().unwrap().take();
                     match payload {
                         Some(p) => (
                             200,
@@ -58,12 +68,15 @@ fn start_pm_upload_bridge_server(app: tauri::AppHandle) {
                 _ => (404, "text/plain", "not found".to_string()),
             };
 
-            let header =
+            let content_type_header =
                 tiny_http::Header::from_bytes(&b"Content-Type"[..], content_type.as_bytes())
                     .unwrap();
+            let cache_control_header =
+                tiny_http::Header::from_bytes(&b"Cache-Control"[..], &b"no-store"[..]).unwrap();
             let response = tiny_http::Response::from_string(body)
                 .with_status_code(status)
-                .with_header(header);
+                .with_header(content_type_header)
+                .with_header(cache_control_header);
             let _ = request.respond(response);
         }
     });
@@ -92,10 +105,15 @@ fn write_file(file: String, contents: Vec<u8>) -> Result<(), String> {
 #[tauri::command]
 fn open_pm_upload(
     state: tauri::State<PmUploadState>,
+    bridge_ready: tauri::State<PmUploadBridgeReady>,
     title: String,
     project_data_url: String,
     thumbnail_data_url: Option<String>,
 ) -> Result<(), String> {
+    if !bridge_ready.0.load(Ordering::SeqCst) {
+        return Err("pm-upload bridge server failed to start".to_string());
+    }
+
     *state.0.lock().unwrap() = Some(PmUploadPayload {
         title,
         project_data_url,
@@ -152,6 +170,7 @@ pub fn run() {
         .plugin(tauri_plugin_drpc::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(PmUploadState::default())
+        .manage(PmUploadBridgeReady::default())
         .invoke_handler(tauri::generate_handler![
             greet,
             open_external,
