@@ -1,3 +1,4 @@
+use crate::commands::tauri_ext::window::*;
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -5,6 +6,8 @@ use std::sync::Mutex;
 use tauri::webview::PageLoadEvent;
 use tauri::Manager;
 use tauri::{Emitter, Listener};
+
+mod commands;
 
 struct PendingFile {
     path: String,
@@ -160,6 +163,7 @@ fn inject_js_files(webview: &tauri::Webview) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -171,15 +175,13 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(PmUploadState::default())
         .manage(PmUploadBridgeReady::default())
-        .invoke_handler(tauri::generate_handler![
-            greet,
-            open_external,
-            read_file,
-            write_file,
-            open_pm_upload
-        ])
+        .invoke_handler(tauri_helper::tauri_collect_commands!())
         .on_page_load(|webview, payload| {
-            if !OWNED_WINDOW_LABELS.contains(&webview.label()) {
+            let is_extension_window = payload
+                .url()
+                .query_pairs()
+                .any(|(key, _)| key == "tauriExtWindow");
+            if !OWNED_WINDOW_LABELS.contains(&webview.label()) && !is_extension_window {
                 return;
             }
 

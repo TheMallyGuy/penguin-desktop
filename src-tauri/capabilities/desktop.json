@@ -10,6 +10,7 @@
     "packager-win"
   ],
   "permissions": [
-    "updater:default"
+    "updater:default",
+    "window-state:default"
   ]
 }
