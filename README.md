@@ -13,6 +13,8 @@ This project works by building the penguinmod editor and pack it using Tauri. To
 - Open `.pmp` files with the desktop application.
 - Use native close and alert dialogs.
 
+# Others
+[Tauri scratch extension](https://github.com/TheMallyGuy/tauri-scratch-ext)
 # Contributing
 
 Please follow [Tauri's prerequisites](https://tauri.app/start/prerequisites/) before contributing.
